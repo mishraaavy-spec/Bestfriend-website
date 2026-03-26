@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I'm Sorry, Guddiya</title>
+    
+    <!-- CDNs -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --aurora-1: hsla(333, 70%, 55%, 0.4);
+            --aurora-2: hsla(282, 82%, 54%, 0.3);
+            --aurora-3: hsla(210, 89%, 60%, 0.3);
+            --aurora-4: hsla(35, 90%, 60%, 0.3);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0c0a09;
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif; /* Satoshi fallback */
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        h1, h2 {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Layer 1: Animated Aurora */
+        .aurora-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: radial-gradient(circle at 20% 30%, var(--aurora-1) 0%, transparent 40%),
+                        radial-gradient(circle at 80% 70%, var(--aurora-2) 0%, transparent 40%),
+                        radial-gradient(circle at 50% 50%, var(--aurora-3) 0%, transparent 50%),
+                        radial-gradient(circle at 10% 90%, var(--aurora-4) 0%, transparent 30%);
+            filter: blur(80px);
+            animation: aurora-move 20s infinite alternate ease-in-out;
+        }
+
+        @keyframes aurora-move {
+            0% { transform: scale(1) translate(0, 0); }
+            100% { transform: scale(1.2) translate(2%, 3%); }
+        }
+
+        /* Glassmorphism Card */
+        .glass-card {
+            background: rgba(12, 10, 9, 0.6);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border-radius: 24px;
+            padding: 2.5rem;
+            max-width: 550px;
+            width: 90%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .active-card {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Text Gradient */
+        .text-gradient {
+            background: linear-gradient(135deg, #ffd1da 0%, #ffffff 50%, #ffd1da 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Buttons */
+        .btn-pookie {
+            background: linear-gradient(135deg, #ec4899 0%, #ef4444 100%);
+            border-radius: 9999px;
+            padding: 12px 32px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.4);
+            display: inline-block;
+        }
+
+        .btn-pookie:hover {
+            transform: scale(1.05) translateY(-3px);
+            box-shadow: 0 10px 25px rgba(236, 72, 153, 0.6);
+        }
+
+        .btn-pookie:active {
+            transform: scale(0.95);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            position: fixed;
+            top: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            z-index: 50;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 20%;
+            background: linear-gradient(90deg, #ec4899, #ef4444);
+            border-radius: 10px;
+            transition: width 0.6s ease;
+        }
+
+        /* Polaroid */
+        .polaroid-frame {
+            background: white;
+            padding: 12px 12px 40px 12px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            transform: rotate(-3deg);
+            transition: transform 0.1s ease-out;
+            perspective: 1000px;
+        }
+
+        .polaroid-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border: 1px solid #eee;
+        }
+
+        .polaroid-caption {
+            font-family: 'Playfair Display', serif;
+            color: #333;
+            margin-top: 15px;
+            font-size: 1.1rem;
+        }
+
+        /* Bento Grid */
+        .bento-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 1.25rem;
+        }
+
+        #three-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .heart-beat {
+            animation: beat 1.5s infinite;
+            display: inline-block;
+            filter: drop-shadow(0 0 15px rgba(236, 72, 153, 0.8));
+        }
+
+        @keyframes beat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="three-canvas"></canvas>
+    <div class="aurora-bg"></div>
+
+    <div class="progress-container">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <main id="main-container">
+        <!-- Step 1: Welcome -->
+        <div class="glass-card active-card" id="step1">
+            <div class="text-center">
+                <span class="text-6xl heart-beat mb-6">❤️</span>
+                <h1 class="text-4xl md:text-5xl mb-4 text-gradient">Hey Beautiful,</h1>
+                <p class="text-gray-300 text-lg mb-8 leading-relaxed">I built a little world for you, just to say sorry and Apologize my mistake.</p>
+                <button onclick="navigate(2)" class="btn-pookie text-white uppercase tracking-wider">Let's Begin</button>
+            </div>
+        </div>
+
+        <!-- Step 2: Core Message -->
+        <div class="glass-card" id="step2">
+            <div class="text-center">
+                <span class="text-6xl mb-6 block">☹️</span>
+                <h1 class="text-4xl mb-4 text-gradient">Sorry Guddiya</h1>
+                <p class="text-gray-300 text-lg mb-8 italic">
+                    "Guddiya ji sorry g aap to sherni ho n, Angry billi bhi ho bhai gussa to naak pr hi rhta hai cutie g ke."
+                </p>
+                <button onclick="navigate(3)" class="btn-pookie text-white">There's more...</button>
+            </div>
+        </div>
+
+        <!-- Step 3: Bento Grid -->
+        <div class="glass-card" id="step3" style="max-width: 650px;">
+            <h1 class="text-3xl text-center mb-8 text-gradient">A Few Things I Adore About You</h1>
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="bento-item col-span-2">
+                    <h3 class="text-pink-400 font-bold mb-1">✨ Apki Unmatched cuteness</h3>
+                    <p class="text-gray-400 text-sm">Cutieeeeeee to etni ho n billi yrr gusse mei bhi koi Angel se km ni lgti ho .</p>
+                </div>
+                <div class="bento-item">
+                    <h3 class="text-pink-400 font-bold mb-1">😊 That pyri sii smile</h3>
+                    <p class="text-gray-400 text-sm">Are you a magician? Because whenever you smile, everything else disappears yrr.</p>
+                </div>
+                <div class="bento-item">
+                    <h3 class="text-pink-400 font-bold mb-1">🌟 Nakhree</h3>
+                    <p class="text-gray-400 text-sm">Malkin ji paari jo hai isliye nakhre bhi highfy hai.</p>
+                </div>
+            </div>
+            <div class="text-center">
+                <button onclick="navigate(4)" class="btn-pookie text-white">Remember this?</button>
+            </div>
+        </div>
+
+        <!-- Step 4: Shared Memory -->
+        <div class="glass-card" id="step4">
+            <div class="text-center">
+                <h1 class="text-3xl mb-6 text-gradient">That One Time...</h1>
+                <div class="flex justify-center mb-6">
+                    <div class="polaroid-frame" id="polaroid">
+                        <img src="https://i.ibb.co/XZX1XKZt/IMG-20251216-WA0015.jpg" class="polaroid-img" alt="Memory">
+                        <div class="polaroid-caption">Our favorite memory.</div>
+                    </div>
+                </div>
+                <p class="text-gray-300 mb-8 text-sm md:text-base">
+                    Apke sath to saare moment aaise feels hote hai jaise a scene from a movie I'd watch on repeat itti actually n aap to angel ho tbi magic kr deti hogi.
+                </p>
+                <button onclick="navigate(5)" class="btn-pookie text-white">One last thing...</button>
+            </div>
+        </div>
+
+        <!-- Step 5: The Sorry -->
+        <div class="glass-card" id="step5">
+            <div class="text-center">
+                <span class="text-6xl mb-6 block">🎀</span>
+                <h1 class="text-3xl mb-4 text-gradient">I know i made a mistake</h1>
+                <p class="text-gray-300 text-lg mb-8">
+                    but losing you would be the biggest one I'm really sorry If this website made you smile even a little… please forgive me, Paariiii.
+                </p>
+                <div id="finale-area">
+                    <button id="finalBtn" onclick="runFinale()" class="btn-pookie text-white px-10 text-xl">Guddiyaaa!</button>
+                    <h2 id="finalText" class="text-4xl text-white mt-6 hidden">Sorry my pookieee sookiee! ❤️</h2>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- THREE.JS BACKGROUND ---
+        let scene, camera, renderer, hearts = [];
+        const heartCount = 25;
+
+        function initThree() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            // Light
+            const light = new THREE.PointLight(0xffffff, 1.5);
+            light.position.set(5, 5, 5);
+            scene.add(light);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+            // Heart Shape
+            const x = 0, y = 0;
+            const heartShape = new THREE.Shape();
+            heartShape.moveTo(x + 5, y + 5);
+            heartShape.bezierCurveTo(x + 5, y + 5, x + 4, y, x, y);
+            heartShape.bezierCurveTo(x - 6, y, x - 6, y + 7, x - 6, y + 7);
+            heartShape.bezierCurveTo(x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19);
+            heartShape.bezierCurveTo(x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7);
+            heartShape.bezierCurveTo(x + 16, y + 7, x + 16, y, x + 10, y);
+            heartShape.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
+
+            const geometry = new THREE.ExtrudeGeometry(heartShape, { depth: 2, bevelEnabled: true, bevelThickness: 1, bevelSize: 1 });
+            const material = new THREE.MeshPhongMaterial({ color: 0xec4899, shininess: 100 });
+
+            for (let i = 0; i < heartCount; i++) {
+                const mesh = new THREE.Mesh(geometry, material.clone());
+                mesh.position.set(
+                    (Math.random() - 0.5) * 80,
+                    (Math.random() - 0.5) * 80,
+                    (Math.random() - 0.5) * 40 - 20
+                );
+                mesh.rotation.x = Math.PI;
+                mesh.rotation.z = Math.random() * Math.PI;
+                const scale = Math.random() * 0.15 + 0.05;
+                mesh.scale.set(scale, scale, scale);
+                
+                // Add movement data
+                mesh.userData = {
+                    offset: Math.random() * 100,
+                    speed: 0.005 + Math.random() * 0.01
+                };
+
+                scene.add(mesh);
+                hearts.push(mesh);
+            }
+
+            camera.position.z = 50;
+        }
+
+        function animateThree() {
+            requestAnimationFrame(animateThree);
+            hearts.forEach(heart => {
+                heart.position.y += Math.sin(Date.now() * 0.001 + heart.userData.offset) * 0.05;
+                heart.rotation.y += 0.01;
+            });
+            renderer.render(scene, camera);
+        }
+
+        // --- NAVIGATION LOGIC ---
+        function navigate(step) {
+            const current = document.querySelector('.active-card');
+            const next = document.getElementById(`step${step}`);
+            const progress = (step / 5) * 100;
+
+            document.getElementById('progressFill').style.width = progress + '%';
+
+            gsap.to(current, {
+                opacity: 0,
+                y: -40,
+                scale: 0.9,
+                duration: 0.6,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    current.classList.remove('active-card');
+                    next.classList.add('active-card');
+                    
+                    gsap.fromTo(next, 
+                        { opacity: 0, y: 40, scale: 0.9 },
+                        { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: "power3.out" }
+                    );
+
+                    // Trigger internal staggers
+                    gsap.from(next.querySelectorAll('h1, p, button, .bento-item'), {
+                        opacity: 0,
+                        y: 20,
+                        stagger: 0.1,
+                        duration: 0.5,
+                        delay: 0.2
+                    });
+                }
+            });
+        }
+
+        // --- POLAROID PARALLAX ---
+        document.addEventListener('mousemove', (e) => {
+            const polaroid = document.getElementById('polaroid');
+            if (!polaroid || !document.getElementById('step4').classList.contains('active-card')) return;
+            
+            const x = (window.innerWidth / 2 - e.pageX) / 30;
+            const y = (window.innerHeight / 2 - e.pageY) / 30;
+            
+            gsap.to(polaroid, {
+                rotationY: x,
+                rotationX: -y,
+                duration: 0.5,
+                ease: "power2.out"
+            });
+        });
+
+        // --- FINALE ---
+        function runFinale() {
+            const btn = document.getElementById('finalBtn');
+            const text = document.getElementById('finalText');
+
+            gsap.to(btn, { opacity: 0, scale: 0.5, duration: 0.4, onComplete: () => btn.style.display = 'none' });
+            
+            setTimeout(() => {
+                text.classList.remove('hidden');
+                gsap.fromTo(text, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 1, ease: "back.out" });
+                
+                // Confetti Sequence
+                const end = Date.now() + (5 * 1000);
+
+                (function frame() {
+                    confetti({
+                        particleCount: 3,
+                        angle: 60,
+                        spread: 55,
+                        origin: { x: 0, y: 0.8 },
+                        colors: ['#ec4899', '#ef4444', '#ffd1da']
+                    });
+                    confetti({
+                        particleCount: 3,
+                        angle: 120,
+                        spread: 55,
+                        origin: { x: 1, y: 0.8 },
+                        colors: ['#ec4899', '#ef4444', '#ffd1da']
+                    });
+
+                    if (Date.now() < end) {
+                        requestAnimationFrame(frame);
+                    }
+                }());
+
+                // Emoji Burst
+                confetti({
+                    particleCount: 40,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    shapes: ['circle'],
+                    scalar: 2,
+                    content: ['❤️', '💖', '✨', '🎀']
+                });
+
+                // Hearts Swirl Away
+                hearts.forEach((heart, i) => {
+                    gsap.to(heart.position, {
+                        y: 100,
+                        x: (Math.random() - 0.5) * 200,
+                        z: 50,
+                        duration: 3,
+                        delay: i * 0.05,
+                        ease: "power2.in"
+                    });
+                    gsap.to(heart.material, { opacity: 0, duration: 2, delay: i * 0.05 });
+                });
+            }, 500);
+        }
+
+        // Initialize everything
+        window.onload = () => {
+            initThree();
+            animateThree();
+            
+            // Initial Animation
+            gsap.fromTo(".active-card", 
+                { opacity: 0, y: 50 }, 
+                { opacity: 1, y: 0, duration: 1.2, ease: "power4.out" }
+            );
+        };
+
+        // Resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
